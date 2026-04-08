@@ -12,27 +12,11 @@
 //   measurementId: "G-KJ7RW3H9M9"
 // };
 
-// // ✅ Initialize Firebase
-// const app = initializeApp(firebaseConfig);
-
-// // ✅ Auth instance
-// export const auth = getAuth(app);
-
-// // ✅ Google Auth Provider
-// export const googleProvider = new GoogleAuthProvider();
-
-// // ✅ OTP Helper Functions
-// export const setUpRecaptcha = (number) => {
-//   const recaptchaVerifier = new RecaptchaVerifier(
-//     "recaptcha-container",   // 👈 HTML me ek div bana dena
-//     { size: "invisible" },
-//     auth
-//   );
-//   return signInWithPhoneNumber(auth, number, recaptchaVerifier);
-// };
 
 
 
+
+import axios from "axios";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -111,3 +95,6 @@ export {
   signInWithPhoneNumber,
   getRecaptcha,
 };
+export const API = axios.create({
+  baseURL:import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"
+})
