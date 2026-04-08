@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Link } from 'react-router-dom';
-import { auth } from "../firebase";
+import { auth } from "../firebase.js";
 import { signOut } from "firebase/auth";
 
 const Account = () => {

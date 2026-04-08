@@ -18,7 +18,7 @@
 // export default Home;
 
 import React, { useState } from "react";
-import Nav from "../components/Nav";
+import Nav from "../components/Nav.jsx";
 import Category from "../Category.jsx";
 import Card from "../components/Card.jsx";
 import Cart from "../components/Cart.jsx";
