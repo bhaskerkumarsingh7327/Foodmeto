@@ -32,7 +32,10 @@ import Account from './pages/Account';          // ✅ new
 const App = () => {
   const [cartItems, setCartItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // ✅ login state
+  // ✅ Check local storage initially to persist login after refresh
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem("user") ? true : false;
+  }); 
 
   // 🔢 Cart Counter
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
