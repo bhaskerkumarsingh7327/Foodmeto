@@ -8,15 +8,26 @@
 
 // // ====== Config ======
 // const PORT = process.env.PORT || 8080;
-// const MONGO_URI = process.env.MONGO_URI; // Atlas ya local se lega
+// const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/foodapp";
 
 // // ====== Middleware ======
-// app.use(cors());
+// app.use(cors({
+//   origin:[
+//     "http://localhost:5173", // Local development ke liye
+//     // "https://foodmeto-backend.onrender.com",
+//     "https://foodmeto-frontend-lbgc.onrender.com",
+    
+//   ],
+//   Credential:true
+  
+// }));
+
+
 // app.use(express.json({ limit: "1mb" }));
 
 // // ====== Mongo Connect ======
 // mongoose
-//   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .connect(MONGO_URI, { dbName: "foodapp" })
 //   .then(() => console.log("✅ MongoDB connected"))
 //   .catch((err) => {
 //     console.error("❌ MongoDB connection error:", err.message);
@@ -37,7 +48,7 @@
 //   {
 //     id: Number,
 //     name: String,
-//     price: mongoose.Schema.Types.Mixed, // number ya string dono chalega
+//     price: mongoose.Schema.Types.Mixed, // string "₹180" ya number dono chalega
 //     quantity: { type: Number, default: 1 },
 //     type: String,
 //     image: String,
@@ -56,7 +67,7 @@
 //     payment: { type: String, enum: ["COD", "UPI", "Card"], default: "COD" },
 //     cartItems: [orderItemSchema],
 //     totalPrice: { type: Number, required: true },
-//     email: { type: String }, // optional
+//     email: { type: String }, // optional: user ke login email se link
 //   },
 //   { timestamps: true }
 // );
@@ -89,7 +100,7 @@
 
 //     return res.json({ success: true, message: "User registered!" });
 //   } catch (err) {
-//     console.error("Signup error:", err.message);
+//     console.error("Signup error:", err);
 //     return res.status(500).json({ success: false, message: "Server error" });
 //   }
 // });
@@ -113,7 +124,7 @@
 //       user: { id: user._id, name: user.name, email: user.email },
 //     });
 //   } catch (err) {
-//     console.error("Login error:", err.message);
+//     console.error("Login error:", err);
 //     return res.status(500).json({ success: false, message: "Server error" });
 //   }
 // });
@@ -139,7 +150,7 @@
 
 //     return res.json({ success: true, message: "Order placed!", orderId: order._id });
 //   } catch (err) {
-//     console.error("Order error:", err.message);
+//     console.error("Order error:", err);
 //     return res.status(500).json({ success: false, message: "Server error" });
 //   }
 // });
@@ -148,7 +159,6 @@
 // app.listen(PORT, () => {
 //   console.log(`Server started on http://localhost:${PORT}`);
 // });
-
 
 
 const express = require("express");
@@ -167,12 +177,9 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/foodapp";
 app.use(cors({
   origin:[
     "http://localhost:5173", // Local development ke liye
-    // "https://foodmeto-backend.onrender.com",
     "https://foodmeto-frontend-lbgc.onrender.com",
     
   ],
-  Credential:true
-  
 }));
 
 
@@ -285,6 +292,9 @@ app.post("/api/auth/login", async (req, res) => {
 // Place Order
 app.post("/api/order", async (req, res) => {
   try {
+    // TEMP TEST (Step 3): token aa raha hai ya nahi, sirf shuru ke 30 characters dikhate hain. Step 4 me hata denge.
+    console.log("AUTH HEADER:", req.headers.authorization ? req.headers.authorization.slice(0, 30) + "..." : "NONE");
+
     const { name, address, phone, payment, cartItems, totalPrice, email } = req.body || {};
 
     if (!name || !address || !phone || !Array.isArray(cartItems) || typeof totalPrice !== "number") {

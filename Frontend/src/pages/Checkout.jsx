@@ -1,5 +1,6 @@
 // import React, { useState } from "react";
 // import { useNavigate } from "react-router-dom";
+// import axios from "axios";
 
 // const Checkout = ({ cartItems, setCartItems }) => {
 //   const navigate = useNavigate();
@@ -22,13 +23,12 @@
 //     return acc + price * qty;
 //   }, 0);
 
-//   // 📌 Handle input change
 //   const handleChange = (e) => {
 //     setFormData({ ...formData, [e.target.name]: e.target.value });
 //   };
 
 //   // 📌 Handle Order
-//   const handleOrder = (e) => {
+//   const handleOrder = async (e) => {
 //     e.preventDefault();
 
 //     if (!formData.name || !formData.address || !formData.phone) {
@@ -36,17 +36,44 @@
 //       return;
 //     }
 
-//     // alert(
-//     //   ✅ Order Placed Successfully!\n\nPayment: ${formData.payment}\nTotal: ₹${totalPrice}
-//     // );
-//     alert(
-//   "✅ Order Placed Successfully!\n\n" +
-//   "Payment: " + formData.payment + "\n" +
-//   "Total: ₹" + totalPrice
-// );
+//     try {
+//       // ✅ Order API call
+//       const res = await axios.post("http://localhost:8080/api/order", {
+//         ...formData,
+//         cartItems,
+//         totalPrice,
+//       });
 
-//     setCartItems([]); // cart empty
-//     navigate("/"); // home pe redirect
+//       if (res.data?.success) {
+//         alert(
+//           "✅ Order Placed Successfully!\n\n" +
+//             "Payment: " +
+//             formData.payment +
+//             "\n" +
+//             "Total: ₹" +
+//             totalPrice
+//         );
+
+//         // ✅ Save order locally to show in Orders page
+//         const newOrder = {
+//           id: res.data?.orderId || "ORD-" + Math.floor(Math.random() * 1000000),
+//           date: new Date().toLocaleString(),
+//           items: cartItems,
+//           total: totalPrice,
+//           status: "Processing"
+//         };
+//         const existingOrders = JSON.parse(localStorage.getItem("myOrders")) || [];
+//         localStorage.setItem("myOrders", JSON.stringify([newOrder, ...existingOrders]));
+
+//         setCartItems([]); // Empty cart
+//         navigate("/");
+//       } else {
+//         alert(res.data?.message || "❌ Order failed, try again");
+//       }
+//     } catch (err) {
+//       console.error(err);
+//       alert("⚠️ Server error, please try later");
+//     }
 //   };
 
 //   return (
@@ -95,7 +122,7 @@
 //             placeholder="Full Name"
 //             value={formData.name}
 //             onChange={handleChange}
-//             className="w-full px-4 border rounded-xl shadow-sm focus:outline-none hover:border-pink400  focus:ring-2 focus:ring-pink-300 focus:border-pink-500 transition duration-300 "
+//             className="w-full px-4 border rounded-xl shadow-sm focus:outline-none hover:border-pink-400  focus:ring-2 focus:ring-pink-300 focus:border-pink-500 transition duration-300 "
 //           />
 
 //           <textarea
@@ -153,11 +180,11 @@
 // export default Checkout;
 
 
-
-
+// import React, { useState } from "react";
 import React, { useState } from "react";
+
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { API } from "../api";
 
 const Checkout = ({ cartItems, setCartItems }) => {
   const navigate = useNavigate();
@@ -195,7 +222,7 @@ const Checkout = ({ cartItems, setCartItems }) => {
 
     try {
       // ✅ Order API call
-      const res = await axios.post("http://localhost:8080/api/order", {
+      const res = await API.post("/api/order", {
         ...formData,
         cartItems,
         totalPrice,
@@ -229,7 +256,12 @@ const Checkout = ({ cartItems, setCartItems }) => {
       }
     } catch (err) {
       console.error(err);
-      alert("⚠️ Server error, please try later");
+      // Debugging ke liye: asli error, URL aur status dikhata hai (baad me hata sakte ho)
+      alert(
+        "⚠️ Order fail: " + (err.response?.data?.message || err.message) +
+        "\nURL: " + (err.config?.baseURL || "") + (err.config?.url || "") +
+        "\nStatus: " + (err.response?.status || "no response")
+      );
     }
   };
 
