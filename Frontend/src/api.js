@@ -1,8 +1,14 @@
 import axios from "axios";
 import { auth } from "./firebase";
 
+// Local (npm run dev) me localhost, deployed site par Render ka backend.
+// VITE_API_BASE_URL set ho to wahi sabse pehle use hota hai.
+const DEFAULT_API = import.meta.env.DEV
+  ? "http://localhost:8080"
+  : "https://foodmeto-backend.onrender.com";
+
 export const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+  baseURL: import.meta.env.VITE_API_BASE_URL || DEFAULT_API,
   timeout: 60000, // Render free plan so jata hai, pehli request slow hoti hai
 });
 
