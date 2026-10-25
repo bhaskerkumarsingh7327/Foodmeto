@@ -182,7 +182,6 @@
 
 // import React, { useState } from "react";
 import React, { useState } from "react";
-
 import { useNavigate } from "react-router-dom";
 import { API } from "../api";
 
@@ -222,10 +221,10 @@ const Checkout = ({ cartItems, setCartItems }) => {
 
     try {
       // ✅ Order API call
+      // Sirf id aur quantity bhejte hain. Price server DB se khud nikalta hai.
       const res = await API.post("/api/order", {
         ...formData,
-        cartItems,
-        totalPrice,
+        cartItems: cartItems.map(({ id, quantity }) => ({ id, quantity })),
       });
 
       if (res.data?.success) {
@@ -235,22 +234,11 @@ const Checkout = ({ cartItems, setCartItems }) => {
             formData.payment +
             "\n" +
             "Total: ₹" +
-            totalPrice
+            res.data.totalPrice
         );
 
-        // ✅ Save order locally to show in Orders page
-        const newOrder = {
-          id: res.data?.orderId || "ORD-" + Math.floor(Math.random() * 1000000),
-          date: new Date().toLocaleString(),
-          items: cartItems,
-          total: totalPrice,
-          status: "Processing"
-        };
-        const existingOrders = JSON.parse(localStorage.getItem("myOrders")) || [];
-        localStorage.setItem("myOrders", JSON.stringify([newOrder, ...existingOrders]));
-
         setCartItems([]); // Empty cart
-        navigate("/");
+        navigate("/orders"); // Orders page ab DB se load hota hai
       } else {
         alert(res.data?.message || "❌ Order failed, try again");
       }

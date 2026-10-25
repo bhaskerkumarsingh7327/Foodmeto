@@ -111,6 +111,8 @@
 // }
 
 
+import { useState, useEffect, useCallback } from "react";
+import { API } from "../api";
 import img1 from "../assets/image1.avif";
 import img2 from "../assets/image2.avif";
 import img3 from "../assets/image3.avif";
@@ -137,40 +139,65 @@ import img23 from "../assets/image23.avif";
 import img24 from "../assets/image24.avif";
 import img25 from "../assets/image25.avif";
 
-const foods = [
-  { id: 1, name: "pancakes", price: "₹180", type: "Veg", rating: 4.5, discount: "-20%", image: img1, category: "Breakfast" },
-  { id: 2, name: "Chicken Soup", price: "₹220", type: "Non-Veg", rating: 4.7, discount: "-15%", image: img2, category: "Soup" },
-  { id: 3, name: "Minestrone Soup", price: "₹120", type: "Veg", rating: 4.2, discount: "-10%", image: img3, category: "Soup" },
-  { id: 4, name: " Spaghetti Carbonara", price: "₹200", type: "Veg", rating: 4.6, discount: "-25%", image: img4, category: "Pasta" },
-  { id: 5, name: "Veg Alfredo Pasta", price: "₹280", type: "Veg", rating: 4.8, discount: "-12%", image: img5, category: "Pasta" },
-  { id: 6, name: "Chicken Alfredo Pasta", price: "₹150", type: "Non-Veg", rating: 4.1, discount: "-18%", image: img6, category: "Pasta" },
-  { id: 7, name: "Paneer Butter Masala", price: "₹250", type: "Veg", rating: 4.4, discount: "-20%", image: img7, category: "Main course" },
-  { id: 8, name: " Chicken Biryani", price: "₹100", type: "Non-Veg", rating: 4.0, discount: "-15%", image: img8, category: "Main course" },
-  { id: 9, name: "Margherita Pizza", price: "₹40", type: "Veg", rating: 4.3, discount: "-5%", image: img9, category: "Pizza" },
-  { id: 10, name: "Pepperoni Pizza", price: "₹160", type: "Veg", rating: 4.2, discount: "-10%", image: img10, category: "Pizza" },
-  { id: 11, name: "Veggie Burger", price: "₹120", type: "Veg", rating: 4.5, discount: "-22%", image: img11, category: "Burger" },
-  { id: 12, name: "Chicken Burger", price: "₹300", type: "Non-Veg", rating: 4.6, discount: "-18%", image: img12, category: "Burger" },
-  { id: 13, name: "Tomato Soup", price: "₹180", type: "Veg", rating: 4.3, discount: "-12%", image: img13, category: "Soup" },
-  { id: 14, name: "Egg Sandwich", price: "₹90", type: "Non-Veg", rating: 4.1, discount: "-8%", image: img14, category: "Breakfast" },
-  { id: 15, name: "Mushroom Soup", price: "₹260", type: "Veg", rating: 4.8, discount: "-20%", image: img15, category: "Soup" },
-  { id: 16, name: "Chicken Tikka Masala", price: "₹100", type: "Non-Veg", rating: 4.4, discount: "-15%", image: img16, category: "Main course" },
-  { id: 17, name: "Cheese Omelette", price: "₹280", type: "Veg", rating: 4.7, discount: "-18%", image: img17, category: "Breakfast" },
-  { id: 18, name: "Fettuccine Alfredo", price: "₹80", type: "Veg", rating: 4.2, discount: "-10%", image: img18, category: "Pasta" },
-  { id: 19, name: "Garlic Bread", price: "₹200", type: "Veg", rating: 4.5, discount: "-25%", image: img19, category: "Pizza" },
-  { id: 20, name: "Fish and Chips", price: "₹220", type: "Non-Veg", rating: 4.6, discount: "-20%", image: img20, category: "Main course" },
-  { id: 21, name: "Hash Browns", price: "₹90", type: "Veg", rating: 4.3, discount: "-15%", image: img21, category: "Breakfast" },
-  { id: 22, name: "Vegetable Soup", price: "₹110", type: "Veg", rating: 4.4, discount: "-12%", image: img22, category: "Soup" },
-  { id: 23, name: "Egg Fried Rice", price: "₹140", type: "Non-Veg", rating: 4.2, discount: "-18%", image: img23, category: "Main course" },
-  { id: 24, name: "Hawaiian Pizza", price: "₹180", type: "Non-Veg", rating: 4.5, discount: "-20%", image: img24, category: "Pizza" },
-  { id: 25, name: "Pasta Primavera", price: "₹60", type: "Veg", rating: 4.7, discount: "-10%", image: img25, category: "Pasta" },
-];
+// Image ka mapping: DB me image nahi hoti, frontend id se image chunta hai
+const images = {
+  1: img1,
+  2: img2,
+  3: img3,
+  4: img4,
+  5: img5,
+  6: img6,
+  7: img7,
+  8: img8,
+  9: img9,
+  10: img10,
+  11: img11,
+  12: img12,
+  13: img13,
+  14: img14,
+  15: img15,
+  16: img16,
+  17: img17,
+  18: img18,
+  19: img19,
+  20: img20,
+  21: img21,
+  22: img22,
+  23: img23,
+  24: img24,
+  25: img25
+};
 
-export default function Card({ selectedCategory,  setCartItems, searchQuery }) {
+export default function Card({ selectedCategory, setCartItems, searchQuery }) {
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadFoods = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await API.get("/api/foods");
+      // Cart/Checkout abhi price ko "₹180" string me padhte hain, isliye yahan same format banaya hai
+      setFoods(
+        data.foods.map((f) => ({ ...f, price: "₹" + f.price, image: images[f.id] }))
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Menu load nahi ho paaya. Internet/backend check karke dobara try karo.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFoods();
+  }, [loadFoods]);
+
   const searchedFoods = foods.filter((item) => {
     const matchesCategory =
       selectedCategory === "All" || item.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -186,6 +213,28 @@ export default function Card({ selectedCategory,  setCartItems, searchQuery }) {
       return [...prev, { ...item, quantity: 1 }];
     });
   };
+
+  if (loading) {
+    return (
+      <p className="text-center text-gray-600 p-10">
+        🍽️ Menu load ho raha hai... (pehli baar 30-60 sec lag sakte hain)
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-10">
+        <p className="text-red-600 mb-3">{error}</p>
+        <button
+          onClick={loadFoods}
+          className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-6 py-2 rounded-lg font-semibold"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6">

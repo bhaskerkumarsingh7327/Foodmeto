@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Link } from 'react-router-dom';
 import { auth } from "../firebase.js";
 import { signOut } from "firebase/auth";
+import { API } from "../api.js";
 
 const Account = () => {
   const { currentUser } = useAuth();
 
+  // Hooks hamesha pehle, conditional return uske baad (React ka rule)
+  const [profilePic, setProfilePic] = useState(() => {
+    return localStorage.getItem("profilePic") || currentUser?.photoURL || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+  });
+  const [orderCount, setOrderCount] = useState(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    API.get("/api/orders/my")
+      .then(({ data }) => setOrderCount(data.orders?.length ?? 0))
+      .catch(() => setOrderCount(null));
+  }, [currentUser]);
+
   if (!currentUser) {
     return <div className="text-center mt-20 text-xl font-semibold">Please Login to view your account.</div>;
   }
-
-  // LocalStorage से फोटो फेच करें या डिफ़ॉल्ट फोटो दिखाएं
-  const [profilePic, setProfilePic] = useState(() => {
-    return localStorage.getItem("profilePic") || currentUser.photoURL || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-  });
 
   // गैलरी से फोटो अपलोड हैंडलर
   const handleImageChange = (e) => {
@@ -69,7 +78,7 @@ const Account = () => {
             <div className="p-5 bg-orange-50 rounded-2xl border border-orange-100 shadow-sm hover:shadow-md transition">
               <h3 className="text-sm font-bold text-orange-500 uppercase tracking-wider">Total Orders</h3>
               <p className="mt-2 text-xl text-gray-800 font-bold">
-                {JSON.parse(localStorage.getItem("myOrders"))?.length || 0}
+                {orderCount ?? "-"}
               </p>
             </div>
           </div>
