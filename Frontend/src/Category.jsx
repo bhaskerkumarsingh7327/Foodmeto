@@ -70,34 +70,41 @@ import { FaBorderAll, FaPastafarianism, FaPizzaSlice } from "react-icons/fa";
 import { MdFreeBreakfast } from "react-icons/md";
 import { TbSoup } from "react-icons/tb";
 import { PiHamburgerFill } from "react-icons/pi";
+import { IoFastFoodSharp } from "react-icons/io5";
 
 export default function Category({ onSelect, selectedCategory }) {
   const categories = [
-    { id: 1, name: "All", icon: <FaBorderAll size={28} /> },
-    { id: 2, name: "Breakfast", icon: <MdFreeBreakfast size={28} /> },
-    { id: 3, name: "Soup", icon: <TbSoup size={28} /> },
-    { id: 4, name: "Pasta", icon: <FaPastafarianism size={28} /> },
-    { id: 5, name: "Main Course", icon: <FaBorderAll size={28} /> },
-    { id: 6, name: "Pizza", icon: <FaPizzaSlice size={28} /> },
-    { id: 7, name: "Burger", icon: <PiHamburgerFill size={28} /> },
+    { id: 1, name: "All", icon: <FaBorderAll size={16} /> },
+    { id: 2, name: "Breakfast", icon: <MdFreeBreakfast size={18} /> },
+    { id: 3, name: "Soup", icon: <TbSoup size={18} /> },
+    { id: 4, name: "Pasta", icon: <FaPastafarianism size={16} /> },
+    { id: 5, name: "Main Course", icon: <IoFastFoodSharp size={18} /> },
+    { id: 6, name: "Pizza", icon: <FaPizzaSlice size={16} /> },
+    { id: 7, name: "Burger", icon: <PiHamburgerFill size={18} /> },
   ];
 
   return (
-    <div className="flex flex-row space-x-4 p-4 overflow-x-auto">
-      {categories.map((item) => (
-        <div
-          key={item.id}
-          onClick={() => onSelect(item.name)}
-          className={`relative flex flex-col items-center justify-center p-4 rounded-xl shadow-lg transition transform bg-pink-200 border-2 cursor-pointer hover:scale-105 hover:shadow-red-500 ${
-            selectedCategory === item.name
-              ? "bg-pink-500 text-white shadow-xl scale-105"
-              : ""
-          }`}
-        >
-          {item.icon}
-          {item.name}
-        </div>
-      ))}
+    <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6">
+      <h2 className="mb-3 text-lg font-extrabold text-slate-800">What's on your mind?</h2>
+      <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+        {categories.map((item) => {
+          const active = selectedCategory === item.name;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item.name)}
+              className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
+                active
+                  ? "border-brand-500 bg-brand-500 text-white shadow-md shadow-brand-500/30"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-600"
+              }`}
+            >
+              {item.icon}
+              {item.name}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
