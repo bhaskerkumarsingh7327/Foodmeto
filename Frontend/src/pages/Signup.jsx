@@ -2,9 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import AuthLayout from "../components/AuthLayout";
+import { inputClass, labelClass, primaryBtn } from "../ui";
 
 const Signup = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -13,52 +16,63 @@ const Signup = () => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       alert("Signup successful, please login!");
       navigate("/login");
     } catch (err) {
       alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-pink-300">
-      <div className="bg-white p-8 rounded-xl w-96 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4 text-center">📝 Signup</h2>
-        <form onSubmit={handleSignup} className="space-y-4">
+    <AuthLayout
+      title="Create your account"
+      subtitle="Kuch hi seconds me account banao aur order shuru karo."
+      footer={
+        <>
+          Already have an account?{" "}
+          <button onClick={() => navigate("/login")} className="font-bold text-brand-600 hover:underline">
+            Login
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div>
+          <label className={labelClass} htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder="you@example.com"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
+            className={inputClass}
           />
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             name="password"
-            placeholder="Password"
+            placeholder="Kam se kam 6 characters"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
+            className={inputClass}
           />
-          <button
-            type="submit"
-            className="w-full py-2 bg-pink-500 text-white rounded-lg"
-          >
-            Register
-          </button>
-        </form>
+        </div>
 
-        <p
-          className="mt-4 text-center text-sm text-gray-600 cursor-pointer"
-          onClick={() => navigate("/login")}
-        >
-          Already have an account? Login
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className={primaryBtn}>
+          {loading ? "Please wait..." : "Register"}
+        </button>
+      </form>
+    </AuthLayout>
   );
 };
 

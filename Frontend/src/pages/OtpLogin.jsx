@@ -100,6 +100,8 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, signInWithPhoneNumber, getRecaptcha } from "../firebase";
+import AuthLayout from "../components/AuthLayout";
+import { inputClass, labelClass, primaryBtn } from "../ui";
 
 const OtpLogin = ({ setIsAuthenticated }) => {
   const [phone, setPhone] = useState("");
@@ -107,15 +109,16 @@ const OtpLogin = ({ setIsAuthenticated }) => {
   const [confirmation, setConfirmation] = useState(null);
   const navigate = useNavigate();
 
-  // 🔑 Refs for OTP inputs
+  // 🔥 Auto-focus ke liye refs
   const otpRefs = useRef([]);
 
-  // ✅ Send OTP
+  // 📌 Send OTP
   const sendOtp = async () => {
     if (!phone || !phone.startsWith("+")) {
       alert("📱 Number format: +91XXXXXXXXXX");
       return;
     }
+
     try {
       const verifier = getRecaptcha("recaptcha-container");
       const result = await signInWithPhoneNumber(auth, phone, verifier);
@@ -128,10 +131,11 @@ const OtpLogin = ({ setIsAuthenticated }) => {
     }
   };
 
-  // ✅ Verify OTP
+  // 📌 Verify OTP
   const verifyOtp = async () => {
     if (!confirmation) return alert("Please send OTP first");
     if (!otp) return alert("Enter OTP");
+
     try {
       await confirmation.confirm(otp);
       localStorage.setItem("user", JSON.stringify({ phone }));
@@ -145,79 +149,79 @@ const OtpLogin = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
-      <div className="w-96 bg-white rounded-2xl shadow-2xl p-8">
-        <h2 className="text-2xl font-bold text-center mb-6">📲 OTP Login</h2>
+    <AuthLayout
+      title="Login with OTP 📲"
+      subtitle="Apna phone number daalo, hum OTP bhejenge."
+      footer={
+        <button onClick={() => navigate("/login")} className="font-bold text-brand-600 hover:underline">
+          ← Back to Login
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className={labelClass} htmlFor="phone">Phone number</label>
+          <input
+            id="phone"
+            type="tel"
+            placeholder="+91 9876543210"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={inputClass}
+          />
+        </div>
 
-        {/* Phone input */}
-        <input
-          type="tel"
-          placeholder="+91 9876543210"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:ring-purple-300"
-        />
-
-        {/* OTP input (show only if confirmation exists) */}
+        {/* OTP boxes (OTP bhejne ke baad dikhte hain) */}
         {confirmation && (
-          <div className="flex justify-between mt-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <input
-                key={i}
-                ref={(el) => (otpRefs.current[i] = el)}
-                type="text"
-                maxLength="1"
-                value={otp[i] || ""}
-                onChange={(e) => {
-                  let value = e.target.value.replace(/[^0-9]/g, "");
-                  let newOtp = otp.split("");
-                  newOtp[i] = value;
-                  setOtp(newOtp.join(""));
+          <div>
+            <label className={labelClass}>Enter 6-digit OTP</label>
+            <div className="flex justify-between gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <input
+                  key={i}
+                  ref={(el) => (otpRefs.current[i] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  value={otp[i] || ""}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^0-9]/g, "");
+                    let newOtp = otp.split("");
+                    newOtp[i] = value;
+                    setOtp(newOtp.join(""));
 
-                  // ✅ Auto move to next box
-                  if (value && i < 5) {
-                    otpRefs.current[i + 1]?.focus();
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Backspace" && !otp[i] && i > 0) {
-                    otpRefs.current[i - 1]?.focus();
-                  }
-                }}
-                className="w-10 h-12 text-center text-lg border rounded-lg focus:outline-none focus:ring focus:ring-purple-300"
-              />
-            ))}
+                    // agle box par jao
+                    if (value && i < 5) {
+                      otpRefs.current[i + 1]?.focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // backspace par pichle box par
+                    if (e.key === "Backspace" && !otp[i] && i > 0) {
+                      otpRefs.current[i - 1]?.focus();
+                    }
+                  }}
+                  className="h-12 w-full min-w-0 rounded-xl border border-slate-200 text-center text-lg font-bold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Button (changes after OTP sent) */}
         {confirmation === null ? (
-          <button
-            onClick={sendOtp}
-            className="w-full mt-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-          >
+          <button onClick={sendOtp} className={primaryBtn}>
             Send OTP
           </button>
         ) : (
-          <button
-            onClick={verifyOtp}
-            className="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
+          <button onClick={verifyOtp} className={primaryBtn}>
             Verify OTP
           </button>
         )}
 
-        <button
-          onClick={() => navigate("/login")}
-          className="w-full mt-3 text-sm text-gray-600 hover:text-black"
-        >
-          ← Back to Login
-        </button>
-
         {/* 🔑 Hidden Recaptcha container */}
         <div id="recaptcha-container"></div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

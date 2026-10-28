@@ -1,11 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { API } from '../api';
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { API } from "../api";
+import PageHeader from "../components/PageHeader";
+
+// Order status ke hisaab se rang
+const statusStyle = {
+  Placed: "bg-blue-100 text-blue-700",
+  Preparing: "bg-amber-100 text-amber-700",
+  "Out for delivery": "bg-purple-100 text-purple-700",
+  Delivered: "bg-green-100 text-green-700",
+  Cancelled: "bg-red-100 text-red-700",
+};
 
 const Orders = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [justPlaced] = useState(Boolean(location.state?.placed)); // Checkout se aane par true
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Banner sirf ek baar dikhe: refresh karne par dobara na aaye
+  useEffect(() => {
+    if (justPlaced) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,57 +48,84 @@ const Orders = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-pink-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">My Orders</h2>
-          <Link to="/" className="text-pink-600 font-semibold hover:underline">⬅ Home</Link>
-        </div>
+    <div className="min-h-screen bg-stone-50">
+      <PageHeader title="My Orders" />
+
+      <main className="mx-auto max-w-3xl px-4 py-6 md:px-6">
+        {justPlaced && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-green-800">
+            <span className="text-2xl">✅</span>
+            <div>
+              <p className="font-bold">Order place ho gaya!</p>
+              <p className="text-sm">Aapka order neeche sabse upar dikh raha hai.</p>
+            </div>
+          </div>
+        )}
 
         {loading ? (
-          <p className="text-center text-gray-600">Loading orders...</p>
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-200" />
+            ))}
+          </div>
         ) : error ? (
-          <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-red-200 text-center text-red-600">
+          <div className="rounded-2xl border border-red-100 bg-white p-8 text-center font-semibold text-red-600 shadow-sm">
             {error}
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-pink-200 text-center">
-            <p className="text-gray-600 text-lg mb-4">You don't have any past orders yet.</p>
-            <Link to="/">
-              <button className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-6 py-2 rounded-lg font-semibold shadow-md hover:scale-105 transition-transform">
-                Browse Food
-              </button>
+          <div className="rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <span className="text-6xl">🍽️</span>
+            <p className="mt-3 text-lg font-bold text-slate-800">Abhi tak koi order nahi</p>
+            <p className="text-sm text-slate-500">Pehla order place karo aur yahan dikhega.</p>
+            <Link
+              to="/"
+              className="mt-5 inline-block rounded-xl bg-brand-500 px-6 py-2.5 font-bold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
+            >
+              Browse food
             </Link>
           </div>
         ) : (
-          <div className="space-y-6">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                <div className="flex justify-between items-center mb-4 border-b pb-4">
-                  <div>
-                    <p className="text-gray-500 text-sm">
-                      Order ID: <span className="font-bold text-gray-800">{order._id.slice(-8).toUpperCase()}</span>
-                    </p>
-                    <p className="text-gray-400 text-xs">{new Date(order.createdAt).toLocaleString()}</p>
-                    <p className="text-gray-400 text-xs">Payment: {order.payment}</p>
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const status = order.status || "Placed";
+              return (
+                <article key={order._id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                      <p className="text-sm text-slate-500">
+                        Order ID{" "}
+                        <span className="font-bold text-slate-800">{order._id.slice(-8).toUpperCase()}</span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-400">{new Date(order.createdAt).toLocaleString()}</p>
+                      <p className="text-xs text-slate-400">Payment: {order.payment}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-extrabold text-slate-800">₹{order.totalPrice}</p>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                          statusStyle[status] || "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-800">₹{order.totalPrice}</p>
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                      {order.status || "Placed"}
-                    </span>
-                  </div>
-                </div>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {order.cartItems.map((item, i) => (
-                    <li key={i}>{item.name} × {item.quantity}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+
+                  <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
+                    {order.cartItems.map((item, i) => (
+                      <li key={i} className="flex justify-between">
+                        <span>
+                          {item.name} <span className="text-slate-400">× {item.quantity}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              );
+            })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

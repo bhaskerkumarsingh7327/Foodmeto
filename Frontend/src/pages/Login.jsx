@@ -196,22 +196,29 @@
 
 
 
+// Poori app me same look rakhne ke liye shared Tailwind classes
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "../firebase";
 import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { FcGoogle } from "react-icons/fc";
+import AuthLayout from "../components/AuthLayout";
+import { inputClass, labelClass, primaryBtn, secondaryBtn } from "../ui";
 
 const Login = ({ setIsAuthenticated }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 📌 Email + Password Login
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
       localStorage.setItem("user", JSON.stringify({ email: formData.email }));
@@ -219,9 +226,12 @@ const Login = ({ setIsAuthenticated }) => {
       navigate("/");
     } catch (err) {
       alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // 📌 Google Login
   const handleGoogle = async () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
@@ -234,61 +244,74 @@ const Login = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-pink-300">
-      <div className="bg-white p-8 rounded-xl w-96 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4 text-center">🔑 Login</h2>
-        <form onSubmit={handleLogin} className="space-y-4">
+    <AuthLayout
+      title="Welcome back 👋"
+      subtitle="Login karke apna favourite khana order karo."
+      footer={
+        <>
+          New to Foodmeto?{" "}
+          <button onClick={() => navigate("/signup")} className="font-bold text-brand-600 hover:underline">
+            Create account
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label className={labelClass} htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder="you@example.com"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
+            className={inputClass}
           />
+        </div>
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="text-sm font-semibold text-slate-700" htmlFor="password">Password</label>
+            <button
+              type="button"
+              onClick={() => navigate("/forgot-password")}
+              className="text-sm font-semibold text-brand-600 hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
           <input
+            id="password"
             type="password"
             name="password"
-            placeholder="Password"
+            placeholder="Enter your password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
+            className={inputClass}
           />
-          <button
-            type="submit"
-            className="w-full py-2 bg-pink-500 text-white rounded-lg"
-          >
-            Login
-          </button>
-        </form>
+        </div>
 
-        <button
-          onClick={handleGoogle}
-          className="w-full py-2 mt-3 bg-red-500 text-white rounded-lg"
-        >
-          Sign in with Google
+        <button type="submit" disabled={loading} className={primaryBtn}>
+          {loading ? "Please wait..." : "Login"}
         </button>
+      </form>
 
-        <p
-          className="mt-4 text-center text-sm text-gray-600 cursor-pointer"
-          onClick={() => navigate("/signup")}
-        >
-          New user? Create account
-        </p>
-        <p
-          className="mt-2 text-center text-sm text-gray-600 cursor-pointer"
-          onClick={() => navigate("/forgot-password")}
-        >
-          Forgot password?
-        </p>
-        <p
-          className="mt-2 text-center text-sm text-gray-600 cursor-pointer"
-          onClick={() => navigate("/otp-login")}
-        >
-          Login with OTP
-        </p>
+      <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase text-slate-400">
+        <span className="h-px flex-1 bg-slate-200" />
+        or
+        <span className="h-px flex-1 bg-slate-200" />
       </div>
-    </div>
+
+      <div className="space-y-3">
+        <button onClick={handleGoogle} className={`${secondaryBtn} flex items-center justify-center gap-3`}>
+          <FcGoogle className="h-5 w-5" /> Continue with Google
+        </button>
+        <button onClick={() => navigate("/otp-login")} className={secondaryBtn}>
+          📲 Login with OTP
+        </button>
+      </div>
+    </AuthLayout>
   );
 };
 

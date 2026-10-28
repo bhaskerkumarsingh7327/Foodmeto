@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { Link } from "react-router-dom";
 import { auth } from "../firebase.js";
 import { signOut } from "firebase/auth";
 import { API } from "../api.js";
+import PageHeader from "../components/PageHeader";
+import { FaBoxOpen, FaSignOutAlt } from "react-icons/fa";
+
+const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
 const Account = () => {
   const { currentUser } = useAuth();
 
   // Hooks hamesha pehle, conditional return uske baad (React ka rule)
   const [profilePic, setProfilePic] = useState(() => {
-    return localStorage.getItem("profilePic") || currentUser?.photoURL || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    return localStorage.getItem("profilePic") || currentUser?.photoURL || DEFAULT_AVATAR;
   });
   const [orderCount, setOrderCount] = useState(null);
 
@@ -22,10 +26,10 @@ const Account = () => {
   }, [currentUser]);
 
   if (!currentUser) {
-    return <div className="text-center mt-20 text-xl font-semibold">Please Login to view your account.</div>;
+    return <div className="mt-20 text-center text-xl font-semibold">Please Login to view your account.</div>;
   }
 
-  // गैलरी से फोटो अपलोड हैंडलर
+  // 📸 Gallery se photo upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -33,13 +37,13 @@ const Account = () => {
       reader.onloadend = () => {
         setProfilePic(reader.result);
         localStorage.setItem("profilePic", reader.result);
-        window.dispatchEvent(new Event("profilePicUpdated")); // Nav bar को अपडेट करने के लिए इवेंट
+        window.dispatchEvent(new Event("profilePicUpdated")); // Nav bar ko update karne ke liye
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // लॉगआउट हैंडलर
+  // 🚪 Logout
   const handleLogout = async () => {
     await signOut(auth);
     localStorage.removeItem("user");
@@ -47,56 +51,65 @@ const Account = () => {
   };
 
   return (
-    <div className="min-h-screen bg-pink-50 py-12 px-6">
-      <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-100">
-        
-        {/* 🎨 Header Banner */}
-        <div className="h-32 bg-gradient-to-r from-pink-500 to-red-400"></div>
+    <div className="min-h-screen bg-stone-50">
+      <PageHeader title="My Account" />
 
-        <div className="relative px-8 pb-10 flex flex-col items-center">
-          
-          {/* 📸 Profile Image */}
-          <div className="relative -mt-16 w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white group">
-            <label htmlFor="profile-upload" className="cursor-pointer w-full h-full block relative">
-              <img src={profilePic} alt="User Avatar" className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-white text-sm font-bold">📷 Edit</span>
+      <main className="mx-auto max-w-2xl px-4 py-8 md:px-6">
+        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+          {/* Banner */}
+          <div className="h-28 bg-gradient-to-r from-brand-500 via-orange-500 to-red-500" />
+
+          <div className="flex flex-col items-center px-6 pb-8">
+            {/* Profile photo (click karke badlo) */}
+            <div className="group relative -mt-14 h-28 w-28 overflow-hidden rounded-full border-4 border-white bg-white shadow-lg">
+              <label htmlFor="profile-upload" className="relative block h-full w-full cursor-pointer">
+                <img src={profilePic} alt="User Avatar" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="text-sm font-bold text-white">📷 Edit</span>
+                </div>
+              </label>
+              <input type="file" id="profile-upload" accept="image/*" className="hidden" onChange={handleImageChange} />
+            </div>
+
+            <h2 className="mt-4 text-2xl font-extrabold text-slate-800">{currentUser.displayName || "Foodie User"}</h2>
+            <p className="mt-1 text-slate-500">{currentUser.email || currentUser.phoneNumber || "No Contact Info"}</p>
+
+            {/* Stats */}
+            <div className="mt-8 grid w-full grid-cols-2 gap-4 text-center">
+              <div className="rounded-2xl border border-green-100 bg-green-50 p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-green-600">Account status</h3>
+                <p className="mt-2 text-xl font-extrabold text-slate-800">Active ✅</p>
               </div>
-            </label>
-            <input type="file" id="profile-upload" accept="image/*" className="hidden" onChange={handleImageChange} />
-          </div>
-
-          <h2 className="mt-4 text-3xl font-bold text-gray-800">{currentUser.displayName || "Foodie User"}</h2>
-          <p className="text-gray-500 mt-1">{currentUser.email || currentUser.phoneNumber || "No Contact Info"}</p>
-
-          {/* 📊 Details Section */}
-          <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
-            <div className="p-5 bg-pink-50 rounded-2xl border border-pink-100 shadow-sm hover:shadow-md transition">
-              <h3 className="text-sm font-bold text-pink-500 uppercase tracking-wider">Account Status</h3>
-              <p className="mt-2 text-xl text-gray-800 font-bold">Active ✅</p>
+              <div className="rounded-2xl border border-brand-100 bg-brand-50 p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Total orders</h3>
+                <p className="mt-2 text-xl font-extrabold text-slate-800">{orderCount ?? "-"}</p>
+              </div>
             </div>
-            <div className="p-5 bg-orange-50 rounded-2xl border border-orange-100 shadow-sm hover:shadow-md transition">
-              <h3 className="text-sm font-bold text-orange-500 uppercase tracking-wider">Total Orders</h3>
-              <p className="mt-2 text-xl text-gray-800 font-bold">
-                {orderCount ?? "-"}
-              </p>
-            </div>
-          </div>
 
-          {/* 🔘 Actions Button */}
-          <div className="mt-10 flex gap-4 w-full justify-center">
-            <Link to="/orders" className="px-8 py-3 bg-white text-pink-600 border-2 border-pink-500 font-bold rounded-xl shadow-lg hover:bg-pink-50 transition hover:-translate-y-1">
-              View Orders
-            </Link>
-            <Link to="/" className="px-8 py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white font-bold rounded-xl shadow-lg hover:shadow-pink-500/50 transition hover:-translate-y-1">
-              Order Food
-            </Link>
-            <button onClick={handleLogout} className="px-8 py-3 bg-red-100 text-red-600 font-bold rounded-xl shadow-sm hover:bg-red-200 transition hover:-translate-y-1">
-              Logout
-            </button>
+            {/* Actions */}
+            <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row">
+              <Link
+                to="/orders"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-brand-500 py-3 font-bold text-brand-600 transition hover:bg-brand-50"
+              >
+                <FaBoxOpen /> View Orders
+              </Link>
+              <Link
+                to="/"
+                className="flex flex-1 items-center justify-center rounded-xl bg-brand-500 py-3 font-bold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
+              >
+                Order Food
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-50 py-3 font-bold text-red-600 transition hover:bg-red-100"
+              >
+                <FaSignOutAlt /> Logout
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
