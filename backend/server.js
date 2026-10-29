@@ -168,6 +168,9 @@ const bcrypt = require("bcrypt");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const Food = require("./models/Food");
+const Restaurant = require("./models/Restaurant");
+const MenuItem = require("./models/MenuItem");
+const restaurantRoutes = require("./routes/restaurants");
 require("dotenv").config();
 
 const app = express();
@@ -208,6 +211,9 @@ app.use(cors({
 
 app.use(express.json({ limit: "1mb" }));
 
+// Restaurants (naya structure): /api/restaurants aur /api/restaurants/:slug
+app.use("/api/restaurants", restaurantRoutes);
+
 // ====== Mongo Connect ======
 mongoose
   .connect(MONGO_URI, { dbName: "foodapp" })
@@ -229,7 +235,8 @@ const userSchema = new mongoose.Schema(
 
 const orderItemSchema = new mongoose.Schema(
   {
-    id: Number,
+    id: Number, // sirf purane format ke orders me
+    menuItem: { type: mongoose.Schema.Types.ObjectId, ref: "MenuItem" }, // naye format me
     name: String,
     price: mongoose.Schema.Types.Mixed, // string "₹180" ya number dono chalega
     quantity: { type: Number, default: 1 },
@@ -237,7 +244,8 @@ const orderItemSchema = new mongoose.Schema(
     image: String,
     category: String,
     rating: Number,
-    discount: String,
+    discount: String, // purana "-20%" text
+    discountPercent: Number, // naya number (20)
   },
   { _id: false }
 );
@@ -245,6 +253,8 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, index: true }, // Firebase uid (verified token se)
+    restaurant: { type: mongoose.Schema.Types.ObjectId, ref: "Restaurant", index: true }, // purane orders me nahi hoga
+    restaurantName: { type: String }, // order ke waqt ka naam (baad me restaurant ka naam badle tab bhi)
     name: { type: String, required: true },
     address: { type: String, required: true },
     phone: { type: String, required: true },
@@ -351,11 +361,95 @@ app.get("/api/foods", async (_req, res) => {
   }
 });
 
+// ====== Order banane ke helpers ======
+const isObjectId = (v) => typeof v === "string" && /^[a-f0-9]{24}$/i.test(v);
+const MAX_QTY = 50;
+
+// Same item do baar aaye to quantity jod do. Galti ho to { error } deta hai.
+const mergeLines = (cartItems, readId) => {
+  const qtyById = new Map();
+  for (const it of cartItems) {
+    const id = readId(it?.id);
+    const quantity = Number(it?.quantity);
+    if (id === null || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QTY) {
+      return { error: "Invalid item in cart" };
+    }
+    const total = (qtyById.get(id) || 0) + quantity;
+    if (total > MAX_QTY) return { error: "Ek item ki quantity 50 se zyada nahi ho sakti" };
+    qtyById.set(id, total);
+  }
+  return { lines: [...qtyById.entries()].map(([id, quantity]) => ({ id, quantity })) };
+};
+
+// NAYA format: { restaurantId, cartItems: [{ id: "<menuItem _id>", quantity }] }
+// Swiggy jaisa rule: saare items usi ek restaurant ke hone chahiye.
+async function buildRestaurantOrder(restaurantId, cartItems) {
+  if (!isObjectId(restaurantId)) return { error: "Invalid restaurant" };
+
+  const restaurant = await Restaurant.findOne({ _id: restaurantId, isActive: true }).lean();
+  if (!restaurant) return { error: "Restaurant nahi mila" };
+  if (!restaurant.isOpen) return { error: `${restaurant.name} abhi band hai` };
+
+  const merged = mergeLines(cartItems, (id) => (isObjectId(id) ? id.toLowerCase() : null));
+  if (merged.error) return { error: merged.error };
+
+  const menuItems = await MenuItem.find({
+    _id: { $in: merged.lines.map((l) => l.id) },
+    restaurant: restaurant._id, // dusre restaurant ka item yahan nahi milega
+    available: true,
+  }).lean();
+  const byId = new Map(menuItems.map((m) => [String(m._id), m]));
+
+  const items = [];
+  for (const l of merged.lines) {
+    const m = byId.get(l.id);
+    if (!m) return { error: "Cart me koi item is restaurant ka nahi hai ya ab available nahi, cart refresh karo" };
+    items.push({
+      menuItem: m._id,
+      name: m.name,
+      price: m.price, // DB ka price, client ka nahi
+      quantity: l.quantity,
+      type: m.type,
+      category: m.category,
+      rating: m.rating,
+      discountPercent: m.discountPercent,
+    });
+  }
+  return { items, restaurant };
+}
+
+// PURANA format (abhi wala frontend): { cartItems: [{ id: <number>, quantity }] }
+// Naye frontend ke baad ye hata denge.
+async function buildLegacyOrder(cartItems) {
+  const merged = mergeLines(cartItems, (id) => (Number.isInteger(Number(id)) ? Number(id) : null));
+  if (merged.error) return { error: merged.error };
+
+  const foods = await Food.find({ id: { $in: merged.lines.map((l) => l.id) }, available: true }).lean();
+  const foodById = new Map(foods.map((f) => [f.id, f]));
+
+  const items = [];
+  for (const l of merged.lines) {
+    const food = foodById.get(l.id);
+    if (!food) return { error: "Koi item ab available nahi hai, cart refresh karo" };
+    items.push({
+      id: food.id,
+      name: food.name,
+      price: food.price, // DB ka price, client ka nahi
+      quantity: l.quantity,
+      type: food.type,
+      category: food.category,
+      rating: food.rating,
+      discount: food.discount,
+    });
+  }
+  return { items, restaurant: null };
+}
+
 // Place Order (login required)
-// Client sirf { id, quantity } bhejta hai. Naam, price, total sab server DB se nikalta hai.
+// Client sirf id aur quantity bhejta hai. Naam, price, total sab server DB se nikalta hai.
 app.post("/api/order", requireAuth, async (req, res) => {
   try {
-    const { name, address, phone, payment, cartItems } = req.body || {};
+    const { name, address, phone, payment, cartItems, restaurantId } = req.body || {};
 
     if (!name?.trim() || !address?.trim() || !phone?.trim()) {
       return res.status(400).json({ success: false, message: "Name, address & phone required" });
@@ -367,43 +461,23 @@ app.post("/api/order", requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, message: "Cart is empty or invalid" });
     }
 
-    // Har line: id aur quantity valid honi chahiye
-    const lines = [];
-    for (const it of cartItems) {
-      const id = Number(it?.id);
-      const quantity = Number(it?.quantity);
-      if (!Number.isInteger(id) || !Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
-        return res.status(400).json({ success: false, message: "Invalid item in cart" });
-      }
-      lines.push({ id, quantity });
+    // restaurantId aaya to naya format, warna purana
+    const built =
+      restaurantId !== undefined
+        ? await buildRestaurantOrder(restaurantId, cartItems)
+        : await buildLegacyOrder(cartItems);
+
+    if (built.error) {
+      return res.status(400).json({ success: false, message: built.error });
     }
 
-    // DB se asli items nikalo
-    const ids = [...new Set(lines.map((l) => l.id))];
-    const foods = await Food.find({ id: { $in: ids }, available: true }).lean();
-    const foodById = new Map(foods.map((f) => [f.id, f]));
-
-    const items = [];
-    for (const l of lines) {
-      const food = foodById.get(l.id);
-      if (!food) {
-        return res.status(400).json({ success: false, message: "Koi item ab available nahi hai, cart refresh karo" });
-      }
-      items.push({
-        id: food.id,
-        name: food.name,
-        price: food.price, // DB ka price, client ka nahi
-        quantity: l.quantity,
-        type: food.type,
-        category: food.category,
-        rating: food.rating,
-        discount: food.discount,
-      });
-    }
+    const { items, restaurant } = built;
     const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
     const order = await Order.create({
       userId: req.user.uid, // body se nahi, verified token se
+      restaurant: restaurant?._id,
+      restaurantName: restaurant?.name,
       name: name.trim(),
       address: address.trim(),
       phone: phone.trim(),

@@ -55,6 +55,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTimes, FaPlus, FaMinus, FaTrashAlt } from "react-icons/fa";
+import { getItemImage } from "../menuImages";
 
 const priceOf = (item) => parseInt(String(item.price).replace(/\D/g, ""), 10) || 0;
 
@@ -88,16 +89,27 @@ export default function Cart({ cartItems, setCartItems, setCartOpen }) {
           <div>
             <h2 className="text-lg font-extrabold text-slate-800">Your Cart</h2>
             <p className="text-sm text-slate-500">
+              {cartItems[0]?.restaurantName ? `${cartItems[0].restaurantName} · ` : ""}
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </p>
           </div>
-          <button
-            onClick={() => setCartOpen(false)}
-            aria-label="Close cart"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
-          >
-            <FaTimes />
-          </button>
+          <div className="flex items-center gap-2">
+            {cartItems.length > 0 && (
+              <button
+                onClick={() => setCartItems([])}
+                className="text-sm font-semibold text-red-500 transition hover:underline"
+              >
+                Clear cart
+              </button>
+            )}
+            <button
+              onClick={() => setCartOpen(false)}
+              aria-label="Close cart"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
+            >
+              <FaTimes />
+            </button>
+          </div>
         </div>
 
         {/* Items */}
@@ -118,12 +130,12 @@ export default function Cart({ cartItems, setCartItems, setCartOpen }) {
             <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
               {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3">
-                  {item.image && (
-                    <img src={item.image} alt={item.name} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                  {getItemImage(item) && (
+                    <img src={getItemImage(item)} alt={item.name} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold text-slate-800">{item.name}</p>
-                    <p className="text-sm text-slate-500">{item.price} each</p>
+                    <p className="text-sm text-slate-500">₹{priceOf(item)} each</p>
                     <div className="mt-2 flex items-center gap-3">
                       <div className="flex items-center overflow-hidden rounded-lg border border-brand-500">
                         <button

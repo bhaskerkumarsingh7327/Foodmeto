@@ -108,6 +108,7 @@ import ForgotPassword from './pages/ForgotPassword';  // ✅ new
 import OtpLogin from './pages/OtpLogin';        // ✅ new
 import Orders from './pages/Orders';            // ✅ new
 import Account from './pages/Account';          // ✅ new
+import Restaurant from './pages/Restaurant';    // ✅ naya: restaurant ka menu
 
 const App = () => {
   // Cart refresh ke baad bhi bacha rahe (localStorage se load)
@@ -160,6 +161,18 @@ const App = () => {
                 setIsAuthenticated={setIsAuthenticated} 
                 cartCount={cartCount}   // ✅ pass counter to Home
               />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Restaurant Page: /restaurant/foodmeto-kitchen */}
+        <Route
+          path="/restaurant/:slug"
+          element={
+            isAuthenticated ? (
+              <Restaurant cartItems={cartItems} setCartItems={setCartItems} cartCount={cartCount} />
             ) : (
               <Navigate to="/login" replace />
             )

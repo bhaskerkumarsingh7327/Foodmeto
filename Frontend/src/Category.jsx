@@ -72,35 +72,44 @@ import { TbSoup } from "react-icons/tb";
 import { PiHamburgerFill } from "react-icons/pi";
 import { IoFastFoodSharp } from "react-icons/io5";
 
-export default function Category({ onSelect, selectedCategory }) {
-  const categories = [
-    { id: 1, name: "All", icon: <FaBorderAll size={16} /> },
-    { id: 2, name: "Breakfast", icon: <MdFreeBreakfast size={18} /> },
-    { id: 3, name: "Soup", icon: <TbSoup size={18} /> },
-    { id: 4, name: "Pasta", icon: <FaPastafarianism size={16} /> },
-    { id: 5, name: "Main Course", icon: <IoFastFoodSharp size={18} /> },
-    { id: 6, name: "Pizza", icon: <FaPizzaSlice size={16} /> },
-    { id: 7, name: "Burger", icon: <PiHamburgerFill size={18} /> },
-  ];
+// Category ke naam se icon (jis naam ka icon nahi, usme sirf text dikhega)
+const ICONS = {
+  all: <FaBorderAll size={16} />,
+  breakfast: <MdFreeBreakfast size={18} />,
+  soup: <TbSoup size={18} />,
+  pasta: <FaPastafarianism size={16} />,
+  "main course": <IoFastFoodSharp size={18} />,
+  pizza: <FaPizzaSlice size={16} />,
+  burger: <PiHamburgerFill size={18} />,
+};
 
+const DEFAULT_CATEGORIES = ["All", "Breakfast", "Soup", "Pasta", "Main Course", "Pizza", "Burger"];
+
+// categories: naamon ki list (nahi di to purani fixed list). title: upar ka heading
+export default function Category({
+  onSelect,
+  selectedCategory,
+  categories = DEFAULT_CATEGORIES,
+  title = "What's on your mind?",
+}) {
   return (
     <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6">
-      <h2 className="mb-3 text-lg font-extrabold text-slate-800">What's on your mind?</h2>
+      <h2 className="mb-3 text-lg font-extrabold text-slate-800">{title}</h2>
       <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-        {categories.map((item) => {
-          const active = selectedCategory === item.name;
+        {categories.map((name) => {
+          const active = selectedCategory === name;
           return (
             <button
-              key={item.id}
-              onClick={() => onSelect(item.name)}
+              key={name}
+              onClick={() => onSelect(name)}
               className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
                 active
                   ? "border-brand-500 bg-brand-500 text-white shadow-md shadow-brand-500/30"
                   : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-600"
               }`}
             >
-              {item.icon}
-              {item.name}
+              {ICONS[name.toLowerCase()]}
+              {name}
             </button>
           );
         })}

@@ -230,6 +230,12 @@ const Checkout = ({ cartItems, setCartItems }) => {
       setError("Cart khali hai, pehle kuch add karo.");
       return;
     }
+    // Cart me ek hi restaurant ke items hone chahiye (purane bina-restaurant wale items alag tarah ke hain)
+    const restaurantId = cartItems[0].restaurantId;
+    if (cartItems.some((item) => item.restaurantId !== restaurantId)) {
+      setError("Cart me alag alag restaurants ke items hain. Cart khali karke ek restaurant se dobara add karo.");
+      return;
+    }
     if (!formData.name.trim() || !formData.address.trim() || !formData.phone.trim()) {
       setError("⚠️ Please fill all details!");
       return;
@@ -238,10 +244,12 @@ const Checkout = ({ cartItems, setCartItems }) => {
     setLoading(true);
     try {
       // Sirf id aur quantity bhejte hain. Price server DB se khud nikalta hai.
-      const res = await API.post("/api/order", {
+      const payload = {
         ...formData,
         cartItems: cartItems.map(({ id, quantity }) => ({ id, quantity })),
-      });
+      };
+      if (restaurantId) payload.restaurantId = restaurantId; // naya format; bina restaurantId = purana format
+      const res = await API.post("/api/order", payload);
 
       if (res.data?.success) {
         setCartItems([]); // Empty cart
@@ -347,7 +355,11 @@ const Checkout = ({ cartItems, setCartItems }) => {
         {/* Right: order summary */}
         <aside className="lg:col-span-2">
           <div className={`${cardClass} lg:sticky lg:top-20`}>
-            <h2 className="mb-4 text-lg font-extrabold text-slate-800">🧾 Order summary</h2>
+            <h2 className="text-lg font-extrabold text-slate-800">🧾 Order summary</h2>
+            {cartItems[0]?.restaurantName && (
+              <p className="mb-4 mt-1 text-sm text-slate-500">from {cartItems[0].restaurantName}</p>
+            )}
+            {!cartItems[0]?.restaurantName && <div className="mb-4" />}
 
             {cartItems.length === 0 ? (
               <div className="py-6 text-center">
@@ -364,7 +376,7 @@ const Checkout = ({ cartItems, setCartItems }) => {
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-slate-800">{item.name}</p>
                       <p className="text-sm text-slate-500">
-                        {item.price} × {item.quantity || 1}
+                        ₹{priceOf(item)} × {item.quantity || 1}
                       </p>
                     </div>
                     <span className="font-bold text-slate-800">₹{priceOf(item) * (item.quantity || 1)}</span>
